@@ -1,0 +1,9 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+overrides:
+  '@fortawesome/pro-regular-svg-icons': link:../../@fortawesome/pro-regular-svg-icons
+  '@fortawesome/pro-solid-svg-icons': link:../../@fortawesome/pro-solid-svg-icons
