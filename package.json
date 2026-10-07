@@ -1,6 +1,6 @@
 {
     "name": "@luna-park/plugin-motion",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "private": false,
     "description": "Motion plugin for Luna Park.",
     "keywords": [
