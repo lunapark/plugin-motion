@@ -2,6 +2,7 @@ import vue from "@vitejs/plugin-vue";
 import path from "path";
 import type { UserConfig } from "vite";
 import { defineConfig } from "vite";
+import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 
 import packageDefinition from "./package.json" with { type: "json" };
 
@@ -21,7 +22,8 @@ export default defineConfig(() => {
             }
         },
         plugins: [
-            vue()
+            vue(),
+            cssInjectedByJsPlugin({ jsAssetsFilterFunction: (chunk) => chunk.fileName === "index.js" })
         ],
         preview: {
             allowedHosts: [
