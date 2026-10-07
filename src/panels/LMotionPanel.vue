@@ -93,7 +93,7 @@ import {
     faWaveSquare
 } from "@fortawesome/pro-solid-svg-icons";
 import { LInspectorRow } from "@luna-park/design";
-import type { TLayoutSchema } from "@luna-park/plugin";
+import type { TElementPanelProps } from "@luna-park/plugin";
 import { eases } from "animejs";
 import { computed, ref, watch } from "vue";
 
@@ -103,48 +103,45 @@ import LMotionCard from "@/panels/components/LMotionCard.vue";
 import type { TMotionOptions } from "@/runtime";
 import { easeNames, motionConfig, presets } from "@/runtime";
 
-const props = defineProps<{
-    modelValue: TMotionOptions;
-    schema: TLayoutSchema;
-}>();
+const props = defineProps<TElementPanelProps<TMotionOptions>>();
 
 const emits = defineEmits<(e: "update:modelValue", value: TMotionOptions) => void>();
 
 const presetIcons: Record<string, IconDefinition> = {
+    "blur": faDroplet,
     "fade": faCircleHalfStroke,
-    "slide-up": faArrowUp,
+    "grow": faUpRightAndDownLeftFromCenter,
     "slide-down": faArrowDown,
+    "float": faFeather,
     "slide-left": faArrowLeft,
     "slide-right": faArrowRight,
-    "zoom": faExpand,
-    "blur": faDroplet,
-    "grow": faUpRightAndDownLeftFromCenter,
-    "shrink": faDownLeftAndUpRightToCenter,
-    "lift": faArrowUpFromLine,
-    "tilt": faRotateRight,
-    "pulse": faHeartPulse,
-    "float": faFeather,
-    "spin": faArrowsRotate,
-    "shake": faArrowsLeftRight,
     "blink": faLightbulb,
+    "slide-up": faArrowUp,
+    "lift": faArrowUpFromLine,
+    "pulse": faHeartPulse,
+    "shrink": faDownLeftAndUpRightToCenter,
+    "zoom": faExpand,
+    "shake": faArrowsLeftRight,
+    "spin": faArrowsRotate,
+    "tilt": faRotateRight,
     "wiggle": faWaveSquare
 };
 
 const triggerOptions: Array<TMotionButton> = [
-    { id: "mount", icon: faPlay, title: "On mount" },
-    { id: "visible", icon: faEye, title: "When visible" },
-    { id: "scroll", icon: faScroll, title: "Synced with scroll" },
-    { id: "hover", icon: faArrowPointer, title: "On hover" },
-    { id: "press", icon: faHandPointer, title: "On press" },
-    { id: "focus", icon: faBullseye, title: "On focus" },
-    { id: "state", icon: faToggleOn, title: "From a state" }
+    { icon: faPlay, id: "mount", title: "On mount" },
+    { icon: faEye, id: "visible", title: "When visible" },
+    { icon: faScroll, id: "scroll", title: "Synced with scroll" },
+    { icon: faArrowPointer, id: "hover", title: "On hover" },
+    { icon: faHandPointer, id: "press", title: "On press" },
+    { icon: faBullseye, id: "focus", title: "On focus" },
+    { icon: faToggleOn, id: "state", title: "From a state" }
 ];
 
 const categoryOptions: Array<TMotionButton> = [
-    { id: "enter", icon: faRightToBracket, title: "Enter" },
-    { id: "emphasis", icon: faSparkles, title: "Emphasis" },
-    { id: "ambient", icon: faRepeat, title: "Ambient" },
-    { id: "custom", icon: faSliders, title: "Custom from/to" }
+    { icon: faRightToBracket, id: "enter", title: "Enter" },
+    { icon: faSparkles, id: "emphasis", title: "Emphasis" },
+    { icon: faRepeat, id: "ambient", title: "Ambient" },
+    { icon: faSliders, id: "custom", title: "Custom from/to" }
 ];
 
 const easeOptions: Array<TMotionButton> = easeNames.map((ease) => ({ id: ease, title: ease }));
@@ -157,7 +154,7 @@ watch(() => props.modelValue.preset, (preset) => {
 
 const presetOptions = computed<Array<TMotionButton>>(() => Object.entries(presets)
     .filter(([, preset]) => preset.category === category.value)
-    .map(([id]) => ({ id, icon: presetIcons[id], title: startCase(id) })));
+    .map(([id]) => ({ icon: presetIcons[id], id, title: startCase(id) })));
 
 function getCategory(preset: string) {
     return preset === "custom" ? "custom" : presets[preset]?.category ?? "enter";

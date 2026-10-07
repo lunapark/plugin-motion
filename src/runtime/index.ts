@@ -91,6 +91,7 @@ export const presets: Record<string, TPreset> = {
 const naturalValues: TMotionValues = { blur: 0, opacity: 1, rotate: 0, scale: 1, x: 0, y: 0 };
 
 const controllers = new WeakMap<HTMLElement, TController>();
+const latestOptions = new WeakMap<HTMLElement, TMotionOptions>();
 
 function getCustomPreset(options: TMotionOptions): TPreset {
     const params: AnimationParams = {};
@@ -429,11 +430,24 @@ function stop(element: HTMLElement) {
     controllers.delete(element);
 }
 
+export function replayMotion(elements: Array<HTMLElement>) {
+    for (const element of elements) {
+        const options = latestOptions.get(element);
+
+        if (options) {
+            setup(element, options);
+        }
+    }
+}
+
 export const vMotion: Directive<HTMLElement, TMotionOptions> = {
     mounted(element, { value }) {
+        latestOptions.set(element, value);
         setup(element, value);
     },
     updated(element, { value }) {
+        latestOptions.set(element, value);
+
         const controller = controllers.get(element);
 
         if (!controller || controller.key !== getKey(value)) {
@@ -446,6 +460,7 @@ export const vMotion: Directive<HTMLElement, TMotionOptions> = {
         }
     },
     unmounted(element) {
+        latestOptions.delete(element);
         stop(element);
     }
 };

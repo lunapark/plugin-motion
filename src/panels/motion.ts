@@ -1,11 +1,11 @@
-import { faWandMagicSparkles } from "@fortawesome/pro-solid-svg-icons";
+import { faRotateLeft, faWandMagicSparkles } from "@fortawesome/pro-solid-svg-icons";
 import type { TElementPanel } from "@luna-park/plugin";
 import { LogicType } from "@luna-park/plugin";
 import { markRaw } from "vue";
 
 import LMotionPanel from "@/panels/LMotionPanel.vue";
 import type { TMotionOptions } from "@/runtime";
-import { easeNames, presets, vMotion } from "@/runtime";
+import { easeNames, presets, replayMotion, vMotion } from "@/runtime";
 
 import packageDefinition from "../../package.json" with { type: "json" };
 
@@ -31,6 +31,11 @@ export const motionPanel: TElementPanel = {
     icon: faWandMagicSparkles,
     id: "motion",
     label: "Motion",
+    actions: [{
+        icon: faRotateLeft,
+        onClick: ({ getElements }) => replayMotion(getElements()),
+        title: "Replay"
+    }],
     properties: {
         alternate: LogicType.boolean({ default: true, name: "Alternate", optional: true }),
         delay: LogicType.number({ default: 0, name: "Delay", optional: true, options: { suffix: "ms" } }),
