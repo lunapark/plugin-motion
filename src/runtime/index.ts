@@ -43,6 +43,7 @@ type TController = {
     cleanups: Array<() => void>;
     key: string;
     looping: boolean;
+    revealed: boolean;
     splitter?: TextSplitter;
     state?: boolean;
 };
@@ -179,17 +180,40 @@ function getSiblingDelay(context: TContext, index: number, total: number, start 
     }
 }
 
-function getAutoplay(element: HTMLElement, trigger: TMotionTrigger) {
+function getScrollContainer(element: HTMLElement) {
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+        if (/auto|scroll|overlay/.test(getComputedStyle(parent).overflowY) && parent.scrollHeight > parent.clientHeight) {
+            return parent;
+        }
+    }
+
+    return undefined;
+}
+
+function getAutoplay({ controller, element, trigger }: TContext) {
     switch (trigger) {
         case "mount":
             return true;
         case "visible":
-            return onScroll({ repeat: false, target: element });
+            return controller.revealed;
         case "scroll":
-            return onScroll({ sync: true, target: element });
+            return onScroll({ container: getScrollContainer(element), sync: true, target: element });
         default:
             return false;
     }
+}
+
+function revealOnVisible(context: TContext) {
+    const observer = new IntersectionObserver((records) => {
+        if (records.some((record) => record.isIntersecting)) {
+            observer.disconnect();
+            context.controller.revealed = true;
+            forward(context.controller);
+        }
+    });
+
+    observer.observe(context.element);
+    context.controller.cleanups.push(() => observer.disconnect());
 }
 
 function isVisualElement(node: Node): node is HTMLElement {
@@ -208,7 +232,7 @@ function isCurrent({ controller, element }: TContext) {
     return controllers.get(element) === controller;
 }
 
-function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, delay: NonNullable<AnimationParams["delay"]>, autoplay = getAutoplay(context.element, context.trigger)) {
+function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, delay: NonNullable<AnimationParams["delay"]>, autoplay = getAutoplay(context)) {
     const { controller, options, preset, reduced } = context;
     const animation = animate(targets, {
         ...preset.params,
@@ -219,6 +243,10 @@ function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, dela
         ease: options.ease ?? preset.ease ?? motionConfig.ease,
         loop: getLoop(context)
     });
+
+    if (context.trigger === "visible" && !autoplay) {
+        animation.seek(0);
+    }
 
     controller.animations.push(animation);
     return animation;
@@ -244,6 +272,7 @@ function staggerChildren(context: TContext) {
             play(context, added, getDelay(context, 0));
         }
     });
+    bindTrigger(context);
 }
 
 function revealSiblings(contexts: Array<TContext>) {
@@ -263,7 +292,7 @@ function revealSiblings(contexts: Array<TContext>) {
     });
 
     for (const context of contexts) {
-        play(context, context.element, context.options.delay ?? 0, false).seek(0);
+        play(context, context.element, context.options.delay ?? 0, false);
         observer.observe(context.element);
         context.controller.cleanups.push(() => observer.unobserve(context.element));
     }
@@ -367,6 +396,9 @@ function bindTrigger(context: TContext) {
         case "state":
             applyState(controller, !!options.state, true);
             return;
+        case "visible":
+            revealOnVisible(context);
+            return;
         default:
             return;
     }
@@ -377,7 +409,7 @@ function bindTrigger(context: TContext) {
 function setup(element: HTMLElement, options: TMotionOptions) {
     stop(element);
 
-    const controller: TController = { animations: [], cleanups: [], key: getKey(options), looping: false };
+    const controller: TController = { animations: [], cleanups: [], key: getKey(options), looping: false, revealed: false };
     controllers.set(element, controller);
 
     const preset = getPreset(options);
