@@ -181,6 +181,11 @@ function getSiblingDelay(context: TContext, index: number, total: number, start 
 }
 
 function getScrollContainer(element: HTMLElement) {
+    const root = element.closest<HTMLElement>("[data-scroll-root]");
+    if (root) {
+        return root;
+    }
+
     for (let parent = element.parentElement; parent; parent = parent.parentElement) {
         if (/auto|scroll|overlay/.test(getComputedStyle(parent).overflowY) && parent.scrollHeight > parent.clientHeight) {
             return parent;
