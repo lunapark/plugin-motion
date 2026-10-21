@@ -38,6 +38,11 @@ export const motionPanel: TElementPanel = {
     }],
     properties: {
         alternate: LogicType.boolean({ default: true, name: "Alternate", optional: true }),
+        countFrom: LogicType.number({
+            default: 0,
+            name: "Count from",
+            options: { hidden: (values: TMotionOptions) => values.preset !== "count" }
+        }),
         delay: LogicType.number({ default: 0, name: "Delay", optional: true, options: { suffix: "ms" } }),
         duration: LogicType.number({ default: 600, name: "Duration", optional: true, options: { suffix: "ms" } }),
         ease: LogicType.string({
@@ -53,6 +58,26 @@ export const motionPanel: TElementPanel = {
             default: "fade",
             enum: [...Object.keys(presets), "custom"],
             name: "Preset",
+            options: { hidden: true }
+        }),
+        scrollAnchor: LogicType.string({
+            default: "top",
+            description: "Edge of the element that starts the animation when it enters the screen, and reaches the target",
+            enum: { center: "Center", top: "Top" },
+            name: "Scroll anchor",
+            options: { hidden: true }
+        }),
+        scrollMode: LogicType.string({
+            default: "stop",
+            description: "Hold: stays done between target % and 100 − target %, then plays back as the element leaves",
+            enum: { continue: "Continue past target", hold: "Hold, then reverse", stop: "Stop at target" },
+            name: "Scroll mode",
+            options: { hidden: true }
+        }),
+        scrollTarget: LogicType.number({
+            default: 50,
+            description: "Screen position where the animation ends, from the top",
+            name: "Scroll target",
             options: { hidden: true }
         }),
         split: LogicType.string({

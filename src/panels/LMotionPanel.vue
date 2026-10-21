@@ -1,31 +1,69 @@
 <template>
     <div class="motion-panel">
-        <LInspectorRow title="Trigger">
-            <LMotionButtons
-                fill
-                :model-value="modelValue.trigger"
-                :options="triggerOptions"
-                @update:model-value="update('trigger', $event)"
-            />
-        </LInspectorRow>
         <div class="cards">
+            <LMotionCard
+                :hint="triggerOptions.find((option) => option.id === modelValue.trigger)?.title"
+                :icon="faBolt"
+                title="Trigger"
+            >
+                <LSegmented
+                    :model-value="modelValue.trigger"
+                    :options="triggerOptions"
+                    small
+                    wide
+                    @update:model-value="update('trigger', $event)"
+                />
+                <template v-if="modelValue.trigger === 'scroll'">
+                    <div class="option">
+                        <span class="label">Anchor</span>
+                        <LSegmented
+                            :model-value="modelValue.scrollAnchor ?? 'top'"
+                            :options="anchorOptions"
+                            small
+                            @update:model-value="update('scrollAnchor', $event)"
+                        />
+                    </div>
+                    <div class="option">
+                        <span class="label">Mode</span>
+                        <LSegmented
+                            :model-value="modelValue.scrollMode ?? 'stop'"
+                            :options="scrollModeOptions"
+                            small
+                            @update:model-value="update('scrollMode', $event)"
+                        />
+                    </div>
+                    <div class="option">
+                        <span class="label">Target</span>
+                        <LInput
+                            class="input"
+                            :model-value="modelValue.scrollTarget ?? 50"
+                            :options="{ clamp: true, max: 100, min: 0, suffix: '%' }"
+                            small
+                            type="number"
+                            @update:model-value="update('scrollTarget', Number($event))"
+                        />
+                    </div>
+                </template>
+            </LMotionCard>
             <LMotionCard
                 :hint="startCase(modelValue.preset)"
                 :icon="faWandMagicSparkles"
                 title="Animation"
             >
                 <template #header>
-                    <LMotionButtons
+                    <LSegmented
                         :model-value="category"
                         :options="categoryOptions"
-                        @update:model-value="selectCategory"
+                        small
+                        @update:model-value="selectCategory($event!)"
                     />
                 </template>
-                <LMotionButtons
+                <LSegmented
                     v-if="category !== 'custom'"
-                    fill
                     :model-value="modelValue.preset"
                     :options="presetOptions"
+                    small
+                    wide
                     @update:model-value="update('preset', $event)"
                 />
             </LMotionCard>
@@ -34,10 +72,11 @@
                 :icon="faChartLine"
                 title="Easing"
             >
-                <LMotionButtons
-                    fill
+                <LSegmented
                     :model-value="modelValue.ease ?? motionConfig.ease"
                     :options="easeOptions"
+                    small
+                    wide
                     @update:model-value="update('ease', $event)"
                 >
                     <template
@@ -52,7 +91,7 @@
                             <polyline :points="getCurve(ease)" />
                         </svg>
                     </template>
-                </LMotionButtons>
+                </LSegmented>
             </LMotionCard>
         </div>
     </div>
@@ -65,10 +104,14 @@ import {
     faArrowLeft,
     faArrowPointer,
     faArrowRight,
+    faArrowRightToLine,
     faArrowsLeftRight,
+    faArrowsLeftRightToLine,
     faArrowsRotate,
     faArrowUp,
+    faArrowUp19,
     faArrowUpFromLine,
+    faBolt,
     faBullseye,
     faChartLine,
     faCircleHalfStroke,
@@ -77,9 +120,12 @@ import {
     faExpand,
     faEye,
     faFeather,
+    faForward,
     faHandPointer,
     faHeartPulse,
     faLightbulb,
+    faObjectsAlignCenterVertical,
+    faObjectsAlignTop,
     faPlay,
     faRepeat,
     faRightToBracket,
@@ -92,13 +138,12 @@ import {
     faWandMagicSparkles,
     faWaveSquare
 } from "@fortawesome/pro-solid-svg-icons";
-import { LInspectorRow } from "@luna-park/design";
+import type { TOption } from "@luna-park/design";
+import { LInput, LSegmented } from "@luna-park/design";
 import type { TElementPanelProps } from "@luna-park/plugin";
 import { eases } from "animejs";
 import { computed, ref, watch } from "vue";
 
-import type { TMotionButton } from "@/panels/components/LMotionButtons.vue";
-import LMotionButtons from "@/panels/components/LMotionButtons.vue";
 import LMotionCard from "@/panels/components/LMotionCard.vue";
 import type { TMotionOptions } from "@/runtime";
 import { easeNames, motionConfig, presets } from "@/runtime";
@@ -108,43 +153,55 @@ const props = defineProps<TElementPanelProps<TMotionOptions>>();
 const emits = defineEmits<(e: "update:modelValue", value: TMotionOptions) => void>();
 
 const presetIcons: Record<string, IconDefinition> = {
-    "blur": faDroplet,
-    "fade": faCircleHalfStroke,
-    "grow": faUpRightAndDownLeftFromCenter,
-    "slide-down": faArrowDown,
-    "float": faFeather,
-    "slide-left": faArrowLeft,
-    "slide-right": faArrowRight,
     "blink": faLightbulb,
-    "slide-up": faArrowUp,
+    "blur": faDroplet,
+    "count": faArrowUp19,
+    "fade": faCircleHalfStroke,
+    "float": faFeather,
+    "grow": faUpRightAndDownLeftFromCenter,
     "lift": faArrowUpFromLine,
     "pulse": faHeartPulse,
-    "shrink": faDownLeftAndUpRightToCenter,
-    "zoom": faExpand,
     "shake": faArrowsLeftRight,
+    "shrink": faDownLeftAndUpRightToCenter,
+    "slide-down": faArrowDown,
+    "slide-left": faArrowLeft,
+    "slide-right": faArrowRight,
+    "slide-up": faArrowUp,
     "spin": faArrowsRotate,
     "tilt": faRotateRight,
-    "wiggle": faWaveSquare
+    "wiggle": faWaveSquare,
+    "zoom": faExpand
 };
 
-const triggerOptions: Array<TMotionButton> = [
-    { icon: faPlay, id: "mount", title: "On mount" },
-    { icon: faEye, id: "visible", title: "When visible" },
-    { icon: faScroll, id: "scroll", title: "Synced with scroll" },
-    { icon: faArrowPointer, id: "hover", title: "On hover" },
-    { icon: faHandPointer, id: "press", title: "On press" },
-    { icon: faBullseye, id: "focus", title: "On focus" },
-    { icon: faToggleOn, id: "state", title: "From a state" }
+const triggerOptions: Array<TOption> = [
+    { icon: { icon: faPlay }, id: "mount", label: "", title: "On mount" },
+    { icon: { icon: faEye }, id: "visible", label: "", title: "When visible" },
+    { icon: { icon: faScroll }, id: "scroll", label: "", title: "Synced with scroll" },
+    { icon: { icon: faArrowPointer }, id: "hover", label: "", title: "On hover" },
+    { icon: { icon: faHandPointer }, id: "press", label: "", title: "On press" },
+    { icon: { icon: faBullseye }, id: "focus", label: "", title: "On focus" },
+    { icon: { icon: faToggleOn }, id: "state", label: "", title: "From a state" }
 ];
 
-const categoryOptions: Array<TMotionButton> = [
-    { icon: faRightToBracket, id: "enter", title: "Enter" },
-    { icon: faSparkles, id: "emphasis", title: "Emphasis" },
-    { icon: faRepeat, id: "ambient", title: "Ambient" },
-    { icon: faSliders, id: "custom", title: "Custom from/to" }
+const categoryOptions: Array<TOption> = [
+    { icon: { icon: faRightToBracket }, id: "enter", label: "", title: "Enter" },
+    { icon: { icon: faSparkles }, id: "emphasis", label: "", title: "Emphasis" },
+    { icon: { icon: faRepeat }, id: "ambient", label: "", title: "Ambient" },
+    { icon: { icon: faSliders }, id: "custom", label: "", title: "Custom from/to" }
 ];
 
-const easeOptions: Array<TMotionButton> = easeNames.map((ease) => ({ id: ease, title: ease }));
+const anchorOptions: Array<TOption> = [
+    { icon: { icon: faObjectsAlignTop }, id: "top", label: "", title: "Top edge of the element" },
+    { icon: { icon: faObjectsAlignCenterVertical }, id: "center", label: "", title: "Center of the element" }
+];
+
+const scrollModeOptions: Array<TOption> = [
+    { icon: { icon: faArrowRightToLine }, id: "stop", label: "", title: "Stop at target" },
+    { icon: { icon: faForward }, id: "continue", label: "", title: "Continue past target" },
+    { icon: { icon: faArrowsLeftRightToLine }, id: "hold", label: "", title: "Hold between target and 100 − target, then reverse" }
+];
+
+const easeOptions: Array<TOption> = easeNames.map((ease) => ({ id: ease, label: "", title: ease }));
 
 const category = ref(getCategory(props.modelValue.preset));
 
@@ -152,9 +209,9 @@ watch(() => props.modelValue.preset, (preset) => {
     category.value = getCategory(preset);
 });
 
-const presetOptions = computed<Array<TMotionButton>>(() => Object.entries(presets)
+const presetOptions = computed<Array<TOption>>(() => Object.entries(presets)
     .filter(([, preset]) => preset.category === category.value)
-    .map(([id]) => ({ icon: presetIcons[id], id, title: startCase(id) })));
+    .map(([id]) => ({ icon: { icon: presetIcons[id]! }, id, label: "", title: startCase(id) })));
 
 function getCategory(preset: string) {
     return preset === "custom" ? "custom" : presets[preset]?.category ?? "enter";
@@ -199,6 +256,22 @@ function getCurve(name: string) {
         display: flex;
         flex-direction: column;
         gap: var(--length-xs);
+    }
+
+    .option {
+        display: flex;
+        align-items: center;
+        gap: var(--length-xs);
+
+        .label {
+            width: 48px;
+            font-size: var(--font-size-xs);
+            color: var(--color-content-liter);
+        }
+
+        .input {
+            flex: 1;
+        }
     }
 
     .curve {

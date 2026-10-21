@@ -3,7 +3,7 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 minimumReleaseAgeExclude:
-  - '@luna-park/design@1.4.0'
+  - '@luna-park/design@1.4.0 || 1.5.0'
 onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
