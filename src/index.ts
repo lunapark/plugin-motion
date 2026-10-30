@@ -1,6 +1,7 @@
 import type { TEnv } from "@luna-park/plugin";
 import { EInjectionKey, LogicType, makePlugin } from "@luna-park/plugin";
 
+import llm from "@/llm.md?raw";
 import icon from "@/logo.svg";
 import { motionPanel } from "@/panels/motion";
 import type { TMotionConfig } from "@/runtime";
@@ -47,6 +48,7 @@ export default makePlugin({
     id: "motion",
     name: "Motion",
     description: "Animate elements with anime.js.",
+    llm,
     build: {
         frontImports: [{ name: packageDefinition.name, version: packageDefinition.version }],
         injections: ({ config }) => ({
