@@ -1,5 +1,5 @@
-import type { AnimationParams, JSAnimation, ScrollObserver, TextSplitter } from "animejs";
-import { animate, onScroll, splitText, stagger } from "animejs";
+import type { AnimationParams, JSAnimation, ScrollObserver, TextSplitter, WAAPIAnimation, WAAPIAnimationParams } from "animejs";
+import { animate, onScroll, splitText, stagger, waapi } from "animejs";
 import Lenis from "lenis";
 import type { Directive } from "vue";
 import { defineComponent, h, reactive, ref, watchEffect } from "vue";
@@ -46,8 +46,8 @@ type TPreset = {
     duration?: number;
     ease?: string;
     from?: Partial<TMotionValues>;
+    keyframes?: WAAPIAnimationParams;
     loop?: boolean;
-    params?: AnimationParams;
     to?: Partial<TMotionValues>;
 };
 
@@ -65,7 +65,7 @@ type TCounter = {
 };
 
 type TController = {
-    animations: Array<JSAnimation>;
+    animations: Array<JSAnimation | WAAPIAnimation>;
     cleanups: Array<() => void>;
     key: string;
     looping: boolean;
@@ -98,24 +98,24 @@ export function configureMotion(config: Partial<TMotionConfig>) {
 }
 
 export const presets: Record<string, TPreset> = {
-    "fade": { category: "enter", from: { opacity: 0 } },
-    "slide-up": { category: "enter", from: { opacity: 0, y: 32 } },
-    "slide-down": { category: "enter", from: { opacity: 0, y: -32 } },
-    "slide-left": { category: "enter", from: { opacity: 0, x: 32 } },
-    "slide-right": { category: "enter", from: { opacity: 0, x: -32 } },
-    "zoom": { category: "enter", from: { opacity: 0, scale: 0.8 } },
+    "blink": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { opacity: 0.4 }, loop: true },
     "blur": { category: "enter", from: { blur: 8, opacity: 0 } },
     "count": { category: "enter", count: true, duration: 1600 },
+    "fade": { category: "enter", from: { opacity: 0 } },
+    "float": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { composition: "add", transform: ["translateY(0px)", "translateY(-8px)"] }, loop: true },
     "grow": { category: "emphasis", to: { scale: 1.05 } },
-    "shrink": { category: "emphasis", to: { scale: 0.95 } },
     "lift": { category: "emphasis", to: { y: -6 } },
+    "pulse": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { composition: "add", transform: ["scale(1)", "scale(1.06)"] }, loop: true },
+    "slide-down": { category: "enter", from: { opacity: 0, y: -32 } },
+    "shake": { category: "ambient", ease: "linear", keyframes: { composition: "add", transform: ["translateX(0px)", "translateX(-6px)", "translateX(6px)", "translateX(-6px)", "translateX(6px)", "translateX(0px)"] }, loop: true },
+    "slide-left": { category: "enter", from: { opacity: 0, x: 32 } },
+    "slide-right": { category: "enter", from: { opacity: 0, x: -32 } },
+    "shrink": { category: "emphasis", to: { scale: 0.95 } },
+    "slide-up": { category: "enter", from: { opacity: 0, y: 32 } },
+    "spin": { category: "ambient", ease: "linear", keyframes: { composition: "add", transform: ["rotate(0deg)", "rotate(360deg)"] }, loop: true },
     "tilt": { category: "emphasis", to: { rotate: 3 } },
-    "pulse": { alternate: true, category: "ambient", ease: "inOutSine", loop: true, params: { scale: 1.06 } },
-    "float": { alternate: true, category: "ambient", ease: "inOutSine", loop: true, params: { translateY: -8 } },
-    "spin": { category: "ambient", ease: "linear", loop: true, params: { rotate: 360 } },
-    "shake": { category: "ambient", ease: "linear", loop: true, params: { translateX: [0, -6, 6, -6, 6, 0] } },
-    "blink": { alternate: true, category: "ambient", ease: "inOutSine", loop: true, params: { opacity: 0.4 } },
-    "wiggle": { alternate: true, category: "ambient", ease: "inOutSine", loop: true, params: { rotate: { from: -3, to: 3 } } }
+    "wiggle": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { composition: "add", transform: ["rotate(-3deg)", "rotate(3deg)"] }, loop: true },
+    "zoom": { category: "enter", from: { opacity: 0, scale: 0.8 } }
 };
 
 const naturalValues: TMotionValues = { blur: 0, opacity: 1, rotate: 0, scale: 1, x: 0, y: 0 };
@@ -164,7 +164,7 @@ function getPreset(options: TMotionOptions) {
 }
 
 function isContinued({ options, preset, trigger }: TContext) {
-    return trigger === "scroll" && options.scrollMode === "continue" && !preset.params && !preset.count;
+    return trigger === "scroll" && options.scrollMode === "continue" && !preset.keyframes && !preset.count;
 }
 
 function isReduced() {
@@ -380,6 +380,14 @@ function animateCounters(counters: Array<TCounter>, params: AnimationParams) {
     });
 }
 
+function animateTargets(targets: HTMLElement | Array<HTMLElement>, preset: TPreset, params: AnimationParams, continued: boolean) {
+    if (preset.keyframes) {
+        return waapi.animate(targets, { ...preset.keyframes, ...params } as WAAPIAnimationParams);
+    }
+
+    return animate(targets, { ...getValueParams(preset, continued), ...params });
+}
+
 function isVisualElement(node: Node): node is HTMLElement {
     return node instanceof HTMLElement && !["LINK", "META", "SCRIPT", "STYLE", "TEMPLATE"].includes(node.tagName);
 }
@@ -427,7 +435,7 @@ function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, dela
         ease: options.ease ?? (continued ? "linear" : preset.ease ?? motionConfig.ease),
         loop: getLoop(context)
     };
-    const animation = preset.count ? animateCounters(counters, params) : animate(targets, { ...preset.params ?? getValueParams(preset, continued), ...params });
+    const animation = preset.count ? animateCounters(counters, params) : animateTargets(targets, preset, params, continued);
 
     counters.forEach(renderCounter);
 
@@ -664,6 +672,10 @@ export const vMotion: Directive<HTMLElement, TMotionOptions> = {
         latestOptions.set(element, value);
         setup(element, value);
     },
+    unmounted(element) {
+        latestOptions.delete(element);
+        stop(element);
+    },
     updated(element, { value }) {
         latestOptions.set(element, value);
 
@@ -677,10 +689,6 @@ export const vMotion: Directive<HTMLElement, TMotionOptions> = {
         if (value.trigger === "state") {
             applyState(controller, !!value.state, false);
         }
-    },
-    unmounted(element) {
-        latestOptions.delete(element);
-        stop(element);
     }
 };
 

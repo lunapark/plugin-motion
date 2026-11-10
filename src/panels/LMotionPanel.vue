@@ -2,7 +2,7 @@
     <div class="motion-panel">
         <div class="cards">
             <LMotionCard
-                :hint="triggerOptions.find((option) => option.id === modelValue.trigger)?.title"
+                :hint="triggerOptions.find((option) => option.value === modelValue.trigger)?.title"
                 :icon="faBolt"
                 title="Trigger"
             >
@@ -174,34 +174,34 @@ const presetIcons: Record<string, IconDefinition> = {
 };
 
 const triggerOptions: Array<TOption> = [
-    { icon: { icon: faPlay }, id: "mount", label: "", title: "On mount" },
-    { icon: { icon: faEye }, id: "visible", label: "", title: "When visible" },
-    { icon: { icon: faScroll }, id: "scroll", label: "", title: "Synced with scroll" },
-    { icon: { icon: faArrowPointer }, id: "hover", label: "", title: "On hover" },
-    { icon: { icon: faHandPointer }, id: "press", label: "", title: "On press" },
-    { icon: { icon: faBullseye }, id: "focus", label: "", title: "On focus" },
-    { icon: { icon: faToggleOn }, id: "state", label: "", title: "From a state" }
+    { icon: { icon: faPlay }, label: "", title: "On mount", value: "mount" },
+    { icon: { icon: faEye }, label: "", title: "When visible", value: "visible" },
+    { icon: { icon: faScroll }, label: "", title: "Synced with scroll", value: "scroll" },
+    { icon: { icon: faArrowPointer }, label: "", title: "On hover", value: "hover" },
+    { icon: { icon: faHandPointer }, label: "", title: "On press", value: "press" },
+    { icon: { icon: faBullseye }, label: "", title: "On focus", value: "focus" },
+    { icon: { icon: faToggleOn }, label: "", title: "From a state", value: "state" }
 ];
 
 const categoryOptions: Array<TOption> = [
-    { icon: { icon: faRightToBracket }, id: "enter", label: "", title: "Enter" },
-    { icon: { icon: faSparkles }, id: "emphasis", label: "", title: "Emphasis" },
-    { icon: { icon: faRepeat }, id: "ambient", label: "", title: "Ambient" },
-    { icon: { icon: faSliders }, id: "custom", label: "", title: "Custom from/to" }
+    { icon: { icon: faRightToBracket }, label: "", title: "Enter", value: "enter" },
+    { icon: { icon: faSparkles }, label: "", title: "Emphasis", value: "emphasis" },
+    { icon: { icon: faRepeat }, label: "", title: "Ambient", value: "ambient" },
+    { icon: { icon: faSliders }, label: "", title: "Custom from/to", value: "custom" }
 ];
 
 const anchorOptions: Array<TOption> = [
-    { icon: { icon: faObjectsAlignTop }, id: "top", label: "", title: "Top edge of the element" },
-    { icon: { icon: faObjectsAlignCenterVertical }, id: "center", label: "", title: "Center of the element" }
+    { icon: { icon: faObjectsAlignTop }, label: "", title: "Top edge of the element", value: "top" },
+    { icon: { icon: faObjectsAlignCenterVertical }, label: "", title: "Center of the element", value: "center" }
 ];
 
 const scrollModeOptions: Array<TOption> = [
-    { icon: { icon: faArrowRightToLine }, id: "stop", label: "", title: "Stop at target" },
-    { icon: { icon: faForward }, id: "continue", label: "", title: "Continue past target" },
-    { icon: { icon: faArrowsLeftRightToLine }, id: "hold", label: "", title: "Hold between target and 100 − target, then reverse" }
+    { icon: { icon: faArrowRightToLine }, label: "", title: "Stop at target", value: "stop" },
+    { icon: { icon: faForward }, label: "", title: "Continue past target", value: "continue" },
+    { icon: { icon: faArrowsLeftRightToLine }, label: "", title: "Hold between target and 100 − target, then reverse", value: "hold" }
 ];
 
-const easeOptions: Array<TOption> = easeNames.map((ease) => ({ id: ease, label: "", title: ease }));
+const easeOptions: Array<TOption> = easeNames.map((ease) => ({ label: "", title: ease, value: ease }));
 
 const category = ref(getCategory(props.modelValue.preset));
 
@@ -211,7 +211,7 @@ watch(() => props.modelValue.preset, (preset) => {
 
 const presetOptions = computed<Array<TOption>>(() => Object.entries(presets)
     .filter(([, preset]) => preset.category === category.value)
-    .map(([id]) => ({ icon: { icon: presetIcons[id]! }, id, label: "", title: startCase(id) })));
+    .map(([id]) => ({ icon: { icon: presetIcons[id]! }, label: "", title: startCase(id), value: id })));
 
 function getCategory(preset: string) {
     return preset === "custom" ? "custom" : presets[preset]?.category ?? "enter";
