@@ -100,6 +100,7 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/pro-solid-svg-icons";
 import {
+    faAnglesLeft,
     faArrowDown,
     faArrowLeft,
     faArrowPointer,
@@ -160,6 +161,7 @@ const presetIcons: Record<string, IconDefinition> = {
     "float": faFeather,
     "grow": faUpRightAndDownLeftFromCenter,
     "lift": faArrowUpFromLine,
+    "marquee": faAnglesLeft,
     "pulse": faHeartPulse,
     "shake": faArrowsLeftRight,
     "shrink": faDownLeftAndUpRightToCenter,

@@ -1,11 +1,11 @@
 import type { AnimationParams, JSAnimation, ScrollObserver, TextSplitter, WAAPIAnimation, WAAPIAnimationParams } from "animejs";
-import { animate, onScroll, splitText, stagger, waapi } from "animejs";
+import { animate, onScroll, splitText, stagger, steps, waapi } from "animejs";
 import Lenis from "lenis";
 import type { Directive } from "vue";
 import { defineComponent, h, reactive, ref, watchEffect } from "vue";
 
 export type TMotionTrigger = "mount" | "visible" | "scroll" | "hover" | "press" | "focus" | "state";
-export type TMotionValues = { blur: number; opacity: number; rotate: number; scale: number; x: number; y: number; };
+export type TMotionValues = { blur: number; opacity: number; rotate: number; scale: number; scaleX: number; scaleY: number; x: number; y: number; };
 export type TMotionSplit = "chars" | "words" | "lines";
 export type TMotionStaggerFrom = "first" | "center" | "last" | "random";
 export type TMotionScrollAnchor = "top" | "center";
@@ -18,6 +18,7 @@ export type TMotionOptions = {
     duration?: number;
     ease?: string;
     from?: Partial<TMotionValues>;
+    keyframes?: Array<Partial<TMotionValues>>;
     loop?: number;
     preset: string;
     scrollAnchor?: TMotionScrollAnchor;
@@ -27,11 +28,14 @@ export type TMotionOptions = {
     stagger?: number;
     staggerFrom?: TMotionStaggerFrom;
     state?: boolean;
+    stepped?: number;
     to?: Partial<TMotionValues>;
     trigger: TMotionTrigger;
 };
 
 export type TMotionConfig = {
+    anchorOffset: number;
+    anchorScroll: boolean;
     duration: number;
     ease: string;
     reducedMotion: "reduce" | "ignore";
@@ -48,6 +52,8 @@ type TPreset = {
     from?: Partial<TMotionValues>;
     keyframes?: WAAPIAnimationParams;
     loop?: boolean;
+    marquee?: boolean;
+    steps?: Array<Partial<TMotionValues>>;
     to?: Partial<TMotionValues>;
 };
 
@@ -86,6 +92,8 @@ type TContext = {
 export const easeNames = ["linear", "outQuad", "outCubic", "outExpo", "inOutSine", "outBack", "outElastic", "outBounce"];
 
 export const motionConfig = reactive<TMotionConfig>({
+    anchorOffset: 0,
+    anchorScroll: false,
     duration: 600,
     ease: "outExpo",
     reducedMotion: "reduce",
@@ -105,12 +113,13 @@ export const presets: Record<string, TPreset> = {
     "float": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { composition: "add", transform: ["translateY(0px)", "translateY(-8px)"] }, loop: true },
     "grow": { category: "emphasis", to: { scale: 1.05 } },
     "lift": { category: "emphasis", to: { y: -6 } },
+    "marquee": { category: "ambient", duration: 20000, ease: "linear", loop: true, marquee: true },
     "pulse": { alternate: true, category: "ambient", ease: "inOutSine", keyframes: { composition: "add", transform: ["scale(1)", "scale(1.06)"] }, loop: true },
-    "slide-down": { category: "enter", from: { opacity: 0, y: -32 } },
     "shake": { category: "ambient", ease: "linear", keyframes: { composition: "add", transform: ["translateX(0px)", "translateX(-6px)", "translateX(6px)", "translateX(-6px)", "translateX(6px)", "translateX(0px)"] }, loop: true },
+    "shrink": { category: "emphasis", to: { scale: 0.95 } },
+    "slide-down": { category: "enter", from: { opacity: 0, y: -32 } },
     "slide-left": { category: "enter", from: { opacity: 0, x: 32 } },
     "slide-right": { category: "enter", from: { opacity: 0, x: -32 } },
-    "shrink": { category: "emphasis", to: { scale: 0.95 } },
     "slide-up": { category: "enter", from: { opacity: 0, y: 32 } },
     "spin": { category: "ambient", ease: "linear", keyframes: { composition: "add", transform: ["rotate(0deg)", "rotate(360deg)"] }, loop: true },
     "tilt": { category: "emphasis", to: { rotate: 3 } },
@@ -118,7 +127,9 @@ export const presets: Record<string, TPreset> = {
     "zoom": { category: "enter", from: { opacity: 0, scale: 0.8 } }
 };
 
-const naturalValues: TMotionValues = { blur: 0, opacity: 1, rotate: 0, scale: 1, x: 0, y: 0 };
+const naturalValues: TMotionValues = { blur: 0, opacity: 1, rotate: 0, scale: 1, scaleX: 1, scaleY: 1, x: 0, y: 0 };
+
+const positiveKeys: Array<keyof TMotionValues> = ["blur", "scale", "scaleX", "scaleY"];
 
 const anchorRatios: Record<TMotionScrollAnchor, number> = { center: 0.5, top: 0 };
 const continueFactor = 4;
@@ -126,20 +137,22 @@ const continueFactor = 4;
 const controllers = new WeakMap<HTMLElement, TController>();
 const latestOptions = new WeakMap<HTMLElement, TMotionOptions>();
 
-function getValueParams({ from: fromValues, to: toValues }: TPreset, continued: boolean) {
+function getValueParams({ from, steps: between = [], to }: TPreset, continued: boolean) {
     const params: AnimationParams = {};
 
     for (const key of Object.keys(naturalValues) as Array<keyof TMotionValues>) {
-        const from = fromValues?.[key] ?? naturalValues[key];
-        const to = toValues?.[key] ?? naturalValues[key];
+        const values = [from, ...between, to].map((stop) => stop?.[key] ?? naturalValues[key]);
+        const start = values[0]!;
+        const end = values.at(-1)!;
 
-        if (from === to) {
+        if (values.every((value) => value === start)) {
             continue;
         }
 
-        const extended = to + (to - from) * continueFactor;
-        const after = key === "blur" || key === "scale" ? Math.max(0, extended) : extended;
-        const values = continued ? [from, to, after] : [from, to];
+        if (continued) {
+            const extended = end + (end - start) * continueFactor;
+            values.push(positiveKeys.includes(key) ? Math.max(0, extended) : extended);
+        }
 
         switch (key) {
             case "blur":
@@ -160,11 +173,11 @@ function getValueParams({ from: fromValues, to: toValues }: TPreset, continued: 
 }
 
 function getPreset(options: TMotionOptions) {
-    return options.preset === "custom" ? { category: "enter", from: options.from, to: options.to } satisfies TPreset : presets[options.preset];
+    return options.preset === "custom" ? { category: "enter", from: options.from, steps: options.keyframes, to: options.to } satisfies TPreset : presets[options.preset];
 }
 
 function isContinued({ options, preset, trigger }: TContext) {
-    return trigger === "scroll" && options.scrollMode === "continue" && !preset.keyframes && !preset.count;
+    return trigger === "scroll" && options.scrollMode === "continue" && !preset.keyframes && !preset.marquee && !preset.count;
 }
 
 function isReduced() {
@@ -380,9 +393,33 @@ function animateCounters(counters: Array<TCounter>, params: AnimationParams) {
     });
 }
 
-function animateTargets(targets: HTMLElement | Array<HTMLElement>, preset: TPreset, params: AnimationParams, continued: boolean) {
-    if (preset.keyframes) {
-        return waapi.animate(targets, { ...preset.keyframes, ...params } as WAAPIAnimationParams);
+function getMarqueeKeyframes(element: HTMLElement): WAAPIAnimationParams {
+    const gap = parseFloat(getComputedStyle(element).columnGap) || 0;
+    return { transform: ["translateX(0px)", `translateX(calc(-50% - ${ gap / 2 }px))`] };
+}
+
+function repeatChildren({ controller, element }: TContext) {
+    const width = element.style.width;
+    const clones = getChildren(element).map((child) => {
+        const clone = child.cloneNode(true) as HTMLElement;
+        clone.setAttribute("aria-hidden", "true");
+        return clone;
+    });
+
+    element.append(...clones);
+    element.style.width = "max-content";
+    controller.cleanups.push(() => {
+        clones.forEach((clone) => clone.remove());
+        element.style.width = width;
+    });
+}
+
+function animateTargets({ element, options, preset }: TContext, targets: HTMLElement | Array<HTMLElement>, params: AnimationParams, continued: boolean) {
+    const keyframes = preset.marquee ? getMarqueeKeyframes(element) : preset.keyframes;
+
+    if (keyframes) {
+        const ease = options.stepped ? `steps(${ options.stepped })` : params.ease;
+        return waapi.animate(targets, { ...keyframes, ...params, ease } as WAAPIAnimationParams);
     }
 
     return animate(targets, { ...getValueParams(preset, continued), ...params });
@@ -432,10 +469,10 @@ function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, dela
         autoplay,
         delay,
         duration: reduced ? 0 : options.duration ?? preset.duration ?? motionConfig.duration,
-        ease: options.ease ?? (continued ? "linear" : preset.ease ?? motionConfig.ease),
+        ease: options.stepped ? steps(options.stepped) : options.ease ?? (continued ? "linear" : preset.ease ?? motionConfig.ease),
         loop: getLoop(context)
     };
-    const animation = preset.count ? animateCounters(counters, params) : animateTargets(targets, preset, params, continued);
+    const animation = preset.count ? animateCounters(counters, params) : animateTargets(context, targets, params, continued);
 
     counters.forEach(renderCounter);
 
@@ -625,7 +662,12 @@ function setup(element: HTMLElement, options: TMotionOptions) {
 
     controller.looping = getLoop(context) === true;
 
-    if (options.split && !preset.count) {
+    if (preset.marquee) {
+        repeatChildren(context);
+        play(context, element, getDelay(context));
+        observeChildren(context, () => setup(element, options));
+    }
+    else if (options.split && !preset.count) {
         controller.splitter = splitText(element, { [options.split]: true });
         play(context, controller.splitter[options.split] as Array<HTMLElement>, getDelay(context));
     }
@@ -708,6 +750,7 @@ export function makeMotionScroll(scoped: boolean) {
             }
 
             const lenis = new Lenis({
+                anchors: motionConfig.anchorScroll,
                 autoRaf: true,
                 content: wrapper ? element.value : undefined,
                 lerp: props.lerp ?? motionConfig.smoothScrollLerp,

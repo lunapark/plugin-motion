@@ -11,15 +11,23 @@ import packageDefinition from "../../package.json" with { type: "json" };
 
 const triggers = ["mount", "visible", "scroll", "hover", "press", "focus", "state"];
 
+const valueProperties = {
+    blur: LogicType.number({ default: 0, name: "Blur", options: { suffix: "px" } }),
+    opacity: LogicType.number({ default: 1, name: "Opacity" }),
+    rotate: LogicType.number({ default: 0, name: "Rotate (deg)" }),
+    scale: LogicType.number({ default: 1, name: "Scale" }),
+    scaleX: LogicType.number({ default: 1, name: "Scale X" }),
+    scaleY: LogicType.number({ default: 1, name: "Scale Y" }),
+    x: LogicType.number({ default: 0, name: "X", options: { suffix: "px" } }),
+    y: LogicType.number({ default: 0, name: "Y", options: { suffix: "px" } })
+};
+
+function isNotCustom(values: TMotionOptions) {
+    return values.preset !== "custom";
+}
+
 function getValuesSchema(name: string) {
-    return LogicType.object({
-        blur: LogicType.number({ default: 0, name: "Blur", options: { suffix: "px" } }),
-        opacity: LogicType.number({ default: 1, name: "Opacity" }),
-        rotate: LogicType.number({ default: 0, name: "Rotate (deg)" }),
-        scale: LogicType.number({ default: 1, name: "Scale" }),
-        x: LogicType.number({ default: 0, name: "X", options: { suffix: "px" } }),
-        y: LogicType.number({ default: 0, name: "Y", options: { suffix: "px" } })
-    }, { name, options: { hidden: (values: TMotionOptions) => values.preset !== "custom" } });
+    return LogicType.object(valueProperties, { name, options: { hidden: isNotCustom } });
 }
 
 export const motionPanel: TElementPanel = {
@@ -53,6 +61,13 @@ export const motionPanel: TElementPanel = {
             options: { hidden: true }
         }),
         from: getValuesSchema("From"),
+        keyframes: LogicType.array(LogicType.object(valueProperties, { name: "Step" }), {
+            default: [],
+            description: "Steps played between From and To, evenly spaced",
+            name: "Keyframes",
+            optional: true,
+            options: { hidden: isNotCustom }
+        }),
         loop: LogicType.number({ default: -1, description: "-1 = infinite", name: "Loops", optional: true }),
         preset: LogicType.string({
             default: "fade",
@@ -98,6 +113,12 @@ export const motionPanel: TElementPanel = {
             default: false,
             name: "State",
             options: { hidden: (values: TMotionOptions) => values.trigger !== "state" }
+        }),
+        stepped: LogicType.number({
+            default: 2,
+            description: "Jumps through this many frames instead of moving smoothly",
+            name: "Stepped",
+            optional: true
         }),
         to: getValuesSchema("To"),
         trigger: LogicType.string({ default: "mount", enum: triggers, name: "Trigger", options: { hidden: true } })

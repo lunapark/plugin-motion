@@ -8,16 +8,26 @@ import type { TMotionConfig } from "@/runtime";
 import { configureMotion, easeNames, makeMotionScroll, MotionScroll } from "@/runtime";
 
 import packageDefinition from "../package.json" with { type: "json" };
-
 const configSchema = LogicType.object({
-    duration: LogicType.number({ name: "Default duration (ms)", default: 600 }),
-    ease: LogicType.string({ name: "Default easing", default: "outExpo", enum: easeNames }),
-    reducedMotion: LogicType.string({ name: "Reduced motion", default: "reduce", enum: ["reduce", "ignore"] }),
-    smoothScroll: LogicType.boolean({ name: "Smooth scroll", default: false }),
+    anchorOffset: LogicType.number({
+        default: 0,
+        description: "Space kept above a section reached from a link, e.g. the height of a sticky header.",
+        name: "Anchor offset",
+        options: { suffix: "px" }
+    }),
+    anchorScroll: LogicType.boolean({
+        default: false,
+        description: "Links to a section of the page (#pricing) scroll to it smoothly.",
+        name: "Smooth anchor links"
+    }),
+    duration: LogicType.number({ default: 600, name: "Default duration (ms)" }),
+    ease: LogicType.string({ default: "outExpo", enum: easeNames, name: "Default easing" }),
+    reducedMotion: LogicType.string({ default: "reduce", enum: ["reduce", "ignore"], name: "Reduced motion" }),
+    smoothScroll: LogicType.boolean({ default: false, name: "Smooth scroll" }),
     smoothScrollLerp: LogicType.number({
-        name: "Smooth scroll intensity",
         default: 0.1,
         description: "Lower is smoother.",
+        name: "Smooth scroll intensity",
         options: { clamp: true, max: 1, min: 0.01, step: 0.01 }
     })
 });
@@ -40,15 +50,26 @@ function getWrapper({ config, mode }: TEnv<typeof configSchema>) {
     };
 }
 
+function getAnchorCss({ config, mode }: TEnv<typeof configSchema>) {
+    if (mode === "editor" || !config.anchorScroll) {
+        return "";
+    }
+
+    const offset = `[id] { scroll-margin-top: ${ config.anchorOffset }px; }`;
+
+    if (config.smoothScroll) {
+        return offset;
+    }
+
+    const smooth = "html { scroll-behavior: smooth; }";
+    return `${ offset } ${ config.reducedMotion === "reduce" ? `@media (prefers-reduced-motion: no-preference) { ${ smooth } }` : smooth }`;
+}
+
 function applyConfig({ config }: TEnv<typeof configSchema>) {
     configureMotion(config as TMotionConfig);
 }
 
 export default makePlugin({
-    id: "motion",
-    name: "Motion",
-    description: "Animate elements with anime.js.",
-    llm,
     build: {
         frontImports: [{ name: packageDefinition.name, version: packageDefinition.version }],
         injections: ({ config }) => ({
@@ -61,6 +82,7 @@ configureMotion(${ JSON.stringify(config) });
         })
     },
     config: configSchema,
+    description: "Animate elements with anime.js.",
     editor: {
         panel: {
             element: [motionPanel]
@@ -68,8 +90,14 @@ configureMotion(${ JSON.stringify(config) });
         wrapper: getWrapper
     },
     icon,
+    id: "motion",
+    inject: {
+        css: getAnchorCss
+    },
     lifecycle: {
         mount: applyConfig,
         update: applyConfig
-    }
+    },
+    llm,
+    name: "Motion"
 });

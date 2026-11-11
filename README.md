@@ -8,11 +8,13 @@ Powered by [anime.js](https://animejs.com), and what you see in the editor previ
 
 | | |
 |---|---|
-| 🎬 **18 ready-made presets** | Enter, emphasis and ambient animations, one click away. |
+| 🎬 **19 ready-made presets** | Enter, emphasis and ambient animations, one click away. |
 | 🔢 **Count-up** | Numbers count up from 0 (e.g. `0 → 4.9`) when they appear, or as you scroll. |
 | 🌄 **Scroll-linked & parallax** | Tie any animation to the scroll position, stopping at the center of the page or continuing past it. |
 | 🧈 **Smooth scroll** | Lenis-powered inertia scrolling for the whole app, in one switch. |
-| 🎛️ **Custom from/to** | Animate opacity, position, scale, rotation and blur between your own values. |
+| 🔗 **Smooth anchor links** | Links to a section scroll to it smoothly, stopping below your sticky header. |
+| 📰 **Marquee** | Turn a row into an endless ticker or logo strip. Items are repeated for you. |
+| 🎛️ **Custom from/to** | Animate opacity, position, scale, rotation and blur between your own values, with optional keyframes in between. |
 | 🎯 **7 triggers** | On mount, when visible, synced with scroll, on hover, on press, on focus, or driven by a state. |
 | 🌊 **Stagger** | Cascade the animation over children, over sibling elements (lists!), from the first, last, center or at random. |
 | 🔤 **Split text** | Animate a text letter by letter, word by word, or line by line. |
@@ -30,8 +32,8 @@ Powered by [anime.js](https://animejs.com), and what you see in the editor previ
 |---|---|---|
 | **Enter** | `fade`, `slide-up`, `slide-down`, `slide-left`, `slide-right`, `zoom`, `blur`, `count` | Make an element appear (on mount, when scrolled into view…). |
 | **Emphasis** | `grow`, `shrink`, `lift`, `tilt` | Small feedback on interaction, best with hover, press, focus or state. |
-| **Ambient** | `pulse`, `float`, `spin`, `shake`, `blink`, `wiggle` | Loop forever to draw attention. |
-| **Custom** | `custom` | Animate from your **From** values to your **To** values (`opacity`, `x`, `y`, `scale`, `rotate`, `blur`). |
+| **Ambient** | `pulse`, `float`, `spin`, `shake`, `blink`, `wiggle`, `marquee` | Loop forever to draw attention. |
+| **Custom** | `custom` | Animate from your **From** values to your **To** values (`opacity`, `x`, `y`, `scale`, `scaleX`, `scaleY`, `rotate`, `blur`). |
 
 ## 🎯 Triggers
 
@@ -53,6 +55,8 @@ Powered by [anime.js](https://animejs.com), and what you see in the editor previ
 | **Easing** | `linear`, `outQuad`, `outCubic`, `outExpo`, `inOutSine`, `outBack`, `outElastic`, `outBounce`. |
 | **Loops** | Number of repetitions, `-1` for infinite. Ambient presets loop by default. |
 | **Alternate** | Play back and forth instead of restarting each loop. |
+| **Keyframes** | With a **Custom** animation, steps played between **From** and **To**, evenly spaced. Use them for a squash, a wiggle or a bounce. |
+| **Stepped** | Jump through that many frames instead of moving smoothly, for a retro or stop-motion feel. |
 | **Stagger** | Delay between each animated item, in milliseconds. |
 | **Stagger from** | Where the cascade starts: `first`, `center`, `last` or `random`. |
 | **Scroll anchor** / **Scroll target** / **Scroll mode** | With **Synced with scroll**, see [Scroll options](#-scroll-options). |
@@ -62,6 +66,9 @@ Powered by [anime.js](https://animejs.com), and what you see in the editor previ
 > **Count** animates the first number found in the element's text, keeping what surrounds it: `4.9★`, `$1,200`, `+87%`. Decimals and thousands separators are kept. Set **Count from** to start from another value.
 >
 > **Parallax**: pick **Synced with scroll**, **Continue past target** and a **Custom** animation with **From → Y** set to e.g. `100px`. The element is `100px` low when it enters, in place at the target, and keeps rising at the same pace afterwards, so it moves faster than the page. Use a negative value to make it lag behind, like a background. **Continue past target** uses `linear` easing unless you pick one.
+
+> [!TIP]
+> **Marquee**: put it on a row (`display: flex`) inside a parent with `overflow: hidden`, and list your items once. Motion repeats them so the loop is seamless, and hides the copies from screen readers. **Duration** is the time of one pass.
 
 > [!TIP]
 > **Stagger** adapts to what you put it on:
@@ -94,6 +101,8 @@ With the defaults, the animation starts when the top of the element appears and 
 | **Default easing** | `outExpo` | Used by every animation without its own easing (ambient presets have their own). |
 | **Smooth scroll** | `false` | Smooth the scroll of the whole app with [Lenis](https://lenis.darkroom.engineering). |
 | **Smooth scroll intensity** | `0.1` | Lenis `lerp`, between `0.01` and `1`. Lower is smoother. |
+| **Smooth anchor links** | `false` | Links to a section of the page (`#pricing`) scroll to it smoothly. |
+| **Anchor offset** | `0` | Space kept above the section, in pixels, e.g. the height of a sticky header. |
 | **Reduced motion** | `reduce` | With `reduce`, visitors who prefer reduced motion get instant transitions, no delays, no looping or scroll-synced animations, and no smooth scroll. Use `ignore` to always play everything. |
 
 ## 📦 In your deployed app
