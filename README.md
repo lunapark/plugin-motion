@@ -84,12 +84,14 @@ With the **Synced with scroll** trigger, the animation is tied to where the elem
 | **Scroll anchor** | `Top` | Edge of the element (`Top` or `Center`) that starts the animation when it enters at the bottom of the screen, and that has to reach the target. |
 | **Scroll target** | `50%` | Screen position where the animation ends. |
 | **Scroll mode** | `Stop at target` | What happens once the target is reached (see below). |
+| **Scroll range** | Screen height | **Page scroll** mode only: scroll distance in px over which the animation plays. |
 
 | Mode | Behavior |
 |---|---|
 | **Stop at target** | Holds the end state until the element leaves. |
 | **Continue past target** | Keeps going at the same pace past the target, up to 4 times the entry distance. Count-up and ambient presets stop at the target instead. |
 | **Hold, then reverse** | A dead zone: the animation is done once the anchor reaches `max(target, 100 − target)`, holds until the opposite edge (bottom for `Top`, center for `Center`) reaches `min(target, 100 − target)`, then plays back as the element leaves. With `30%`, it holds between `70%` and `30%`. With `50%`, it peaks at the center. |
+| **Page scroll** | Ignores the element position: progress goes from `0` at the top of the page to `1` after **Scroll range**, with `linear` easing unless you pick one. Use it for hero elements visible on load, e.g. a wheel rotating with the scroll. |
 
 With the defaults, the animation starts when the top of the element appears and ends when that top is at the center of the screen.
 

@@ -13,7 +13,7 @@ Animates any layout element. Set its fields as `plugin.motion.<field>` attribute
 ## Triggers
 - `mount` (default): plays when the element is mounted.
 - `visible`: plays once, the first time the element enters the screen.
-- `scroll`: progress follows the scroll position. `scrollAnchor` (`top`/`center`), `scrollTarget` (screen % where it ends, default 50) and `scrollMode` (`stop`, `continue`, `hold`) tune it.
+- `scroll`: progress follows the scroll position. `scrollAnchor` (`top`/`center`), `scrollTarget` (screen % where it ends, default 50) and `scrollMode` (`stop`, `continue`, `hold`) tune it. `scrollMode="page"` ignores the element position: progress goes from 0 at the top of the page to 1 after `scrollRange` px (default: screen height), linear unless `ease` is set. Use it for hero elements visible on load, e.g. a wheel turning with the scroll: `plugin.motion.preset="custom" plugin.motion.trigger="scroll" plugin.motion.scrollMode="page" :plugin.motion.scrollRange="1000" :plugin.motion.to="{rotate:40}"`.
 - `hover`, `press`, `focus`: plays forward on enter and backward on leave.
 - `state`: follows the `state` boolean, e.g. `:plugin.motion.state="menuOpen"`. The first value is applied instantly (`true` shows the end, `false` the start); later changes play forward (`true`) or backward (`false`).
 

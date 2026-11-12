@@ -84,9 +84,15 @@ export const motionPanel: TElementPanel = {
         }),
         scrollMode: LogicType.string({
             default: "stop",
-            description: "Hold: stays done between target % and 100 − target %, then plays back as the element leaves",
-            enum: { continue: "Continue past target", hold: "Hold, then reverse", stop: "Stop at target" },
+            description: "Hold: stays done between target % and 100 − target %, then plays back as the element leaves. Page: follows the page scroll from the top, done after the scroll range",
+            enum: { continue: "Continue past target", hold: "Hold, then reverse", page: "Page scroll", stop: "Stop at target" },
             name: "Scroll mode",
+            options: { hidden: true }
+        }),
+        scrollRange: LogicType.number({
+            default: 0,
+            description: "Page mode only. Scroll distance in px over which the animation plays; 0 uses the screen height",
+            name: "Scroll range",
             options: { hidden: true }
         }),
         scrollTarget: LogicType.number({

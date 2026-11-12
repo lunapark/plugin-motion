@@ -14,7 +14,10 @@
                     @update:model-value="update('trigger', $event)"
                 />
                 <template v-if="modelValue.trigger === 'scroll'">
-                    <div class="option">
+                    <div
+                        v-if="modelValue.scrollMode !== 'page'"
+                        class="option"
+                    >
                         <span class="label">Anchor</span>
                         <LSegmented
                             :model-value="modelValue.scrollAnchor ?? 'top'"
@@ -32,7 +35,25 @@
                             @update:model-value="update('scrollMode', $event)"
                         />
                     </div>
-                    <div class="option">
+                    <div
+                        v-if="modelValue.scrollMode === 'page'"
+                        class="option"
+                    >
+                        <span class="label">Range</span>
+                        <LInput
+                            class="input"
+                            :model-value="modelValue.scrollRange || undefined"
+                            :options="{ min: 0, suffix: 'px' }"
+                            placeholder="Screen"
+                            small
+                            type="number"
+                            @update:model-value="update('scrollRange', Number($event))"
+                        />
+                    </div>
+                    <div
+                        v-else
+                        class="option"
+                    >
                         <span class="label">Target</span>
                         <LInput
                             class="input"
@@ -109,6 +130,7 @@ import {
     faArrowsLeftRight,
     faArrowsLeftRightToLine,
     faArrowsRotate,
+    faArrowsUpToLine,
     faArrowUp,
     faArrowUp19,
     faArrowUpFromLine,
@@ -200,7 +222,8 @@ const anchorOptions: Array<TOption> = [
 const scrollModeOptions: Array<TOption> = [
     { icon: { icon: faArrowRightToLine }, label: "", title: "Stop at target", value: "stop" },
     { icon: { icon: faForward }, label: "", title: "Continue past target", value: "continue" },
-    { icon: { icon: faArrowsLeftRightToLine }, label: "", title: "Hold between target and 100 − target, then reverse", value: "hold" }
+    { icon: { icon: faArrowsLeftRightToLine }, label: "", title: "Hold between target and 100 − target, then reverse", value: "hold" },
+    { icon: { icon: faArrowsUpToLine }, label: "", title: "Follow the page scroll from the top", value: "page" }
 ];
 
 const easeOptions: Array<TOption> = easeNames.map((ease) => ({ label: "", title: ease, value: ease }));

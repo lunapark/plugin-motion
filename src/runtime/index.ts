@@ -9,7 +9,7 @@ export type TMotionValues = { blur: number; opacity: number; rotate: number; sca
 export type TMotionSplit = "chars" | "words" | "lines";
 export type TMotionStaggerFrom = "first" | "center" | "last" | "random";
 export type TMotionScrollAnchor = "top" | "center";
-export type TMotionScrollMode = "stop" | "continue" | "hold";
+export type TMotionScrollMode = "stop" | "continue" | "hold" | "page";
 
 export type TMotionOptions = {
     alternate?: boolean;
@@ -23,6 +23,7 @@ export type TMotionOptions = {
     preset: string;
     scrollAnchor?: TMotionScrollAnchor;
     scrollMode?: TMotionScrollMode;
+    scrollRange?: number;
     scrollTarget?: number;
     split?: TMotionSplit;
     stagger?: number;
@@ -180,6 +181,10 @@ function isContinued({ options, preset, trigger }: TContext) {
     return trigger === "scroll" && options.scrollMode === "continue" && !preset.keyframes && !preset.marquee && !preset.count;
 }
 
+function isPaged({ options, trigger }: TContext) {
+    return trigger === "scroll" && options.scrollMode === "page";
+}
+
 function isReduced() {
     return motionConfig.reducedMotion === "reduce" && typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -297,6 +302,22 @@ function syncWithScroll(context: TContext) {
     return observer;
 }
 
+function followPageScroll({ controller, element, options }: TContext) {
+    const container = getScrollContainer(element);
+    const source = container ?? window;
+
+    function update() {
+        const scroll = container ? container.scrollTop : window.scrollY;
+        const range = options.scrollRange || (container ? container.clientHeight : window.innerHeight);
+        const progress = clamp01(scroll / range);
+        controller.animations.forEach((animation) => animation.seek(animation.duration * progress));
+    }
+
+    update();
+    source.addEventListener("scroll", update, { passive: true });
+    controller.cleanups.push(() => source.removeEventListener("scroll", update));
+}
+
 function refreshOnResize({ controller, element }: TContext, observer: ScrollObserver, container?: HTMLElement) {
     const resizeObserver = new ResizeObserver(() => observer.container.refresh());
 
@@ -312,7 +333,7 @@ function getAutoplay(context: TContext) {
         case "visible":
             return context.controller.revealed;
         case "scroll":
-            return syncWithScroll(context);
+            return isPaged(context) ? false : syncWithScroll(context);
         default:
             return false;
     }
@@ -469,7 +490,7 @@ function play(context: TContext, targets: HTMLElement | Array<HTMLElement>, dela
         autoplay,
         delay,
         duration: reduced ? 0 : options.duration ?? preset.duration ?? motionConfig.duration,
-        ease: options.stepped ? steps(options.stepped) : options.ease ?? (continued ? "linear" : preset.ease ?? motionConfig.ease),
+        ease: options.stepped ? steps(options.stepped) : options.ease ?? (continued || isPaged(context) ? "linear" : preset.ease ?? motionConfig.ease),
         loop: getLoop(context)
     };
     const animation = preset.count ? animateCounters(counters, params) : animateTargets(context, targets, params, continued);
@@ -630,6 +651,11 @@ function bindTrigger(context: TContext) {
             return;
         case "visible":
             revealOnVisible(context);
+            return;
+        case "scroll":
+            if (isPaged(context)) {
+                followPageScroll(context);
+            }
             return;
         default:
             return;
